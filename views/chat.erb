@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タイトル</title>
+</head>
+<body>
+  <!DOCTYPE html>
+<html>
+<head>
+  <title>スタンプ付きチャット</title>
+  <style>
+  *{
+    padding:0;
+    margin:0;
+  }
+  header{
+    width:100vw;
+    height:20vh;
+    background-image: url(../line-background.jpg);
+  }
+  h1{
+    font-size:30px;
+  }
+   #chat-area {
+      border: 1px solid #ccc;
+      height: 80vh;
+      overflow-y: scroll;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      background-image: url(../line-background.jpg);
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+    .message {
+      margin-bottom: 5px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      clear: both;
+      width: fit-content;
+      max-width: 80%;
+    }
+    .sender {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .image-message {
+      max-width: 300px;
+      height: 300px;
+      object-fit:cover;
+      margin-top: 5px;
+    }
+    .system-message {
+      background-color: #f0f0f0;
+      color: #333;
+      align-self: flex-start;
+    }
+    .user-message {
+      background-color: rgba(255, 255, 255, 0)
+      color: #333;
+      align-self: flex-end;
+      text-align: right;
+    }
+    .user-message .sender {
+      t
+    }
+    
+  </style>
+</head>
+<body>
+  <header>
+    <h1>＜99＋　<%=@name%></h1>
+  <header>
+ <div id="chat-area">
+    <% unless @chats.nil? %>
+      <% @chats.each do |chat| %>
+        <div class="message user-message">
+          <% if chat.chat.present? %>
+            <span class="sender"><%= @name%>:</span><br>
+            <img src="<%= chat.chat %>" alt="チャット画像" class="image-message"><br>
+          <% end %>
+        </div>
+        <div class="message system-message" >
+          <span class="sender">システム:</span>
+              投稿ありがとう
+        </div>
+      <% end %>
+    <% end %>
+</div>
+
+  <form id="upload-form" enctype="multipart/form-data">
+    <input type="file" name="file" id="file-input">
+    <button type="submit">送信</button>
+  </form>
+
+  <script>
+    const chatArea = document.getElementById('chat-area');
+    const uploadForm = document.getElementById('upload-form');
+    const fileInput = document.getElementById('file-input');
+    const nameInput = document.querySelector('input[name="file"]'); // hidden inputからnameを取得
+    const myArray = ["投稿ありがとう", "かわいいスタンプだ", "センスある", "もっと送って！","待ってた","さすが"];
+  
+   uploadForm.addEventListener('submit', (event) => {
+      event.preventDefault(); // デフォルトのフォーム送信を防止
+
+      const file = fileInput.files[0];
+      if (file) {
+        const formData = new FormData(uploadForm);
+
+        // 自分のチャットエリアに画像をプレビュー表示
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          appendImageMessage('あなた', e.target.result);
+        };
+        reader.readAsDataURL(file);
+
+        const name = nameInput.value;
+
+        fetch(`/upload/<%=@name%>`, {
+          method: 'POST',
+          body: formData,
+        })
+        .then(response => response.json()) // サーバーからのレスポンスをJSONとして解析
+        .then(data => {
+          if (data && data.url) {
+            const randomIndex = Math.floor(Math.random() * myArray.length);
+            const randomElement = myArray[randomIndex];
+            appendTextMessage('システム',randomElement);
+            fileInput.value = ''; // フォームをリセット
+          } else {
+            appendTextMessage('システム', 'エラーが発生しました。');
+          }
+        })
+        .catch(error => {
+          console.error('Upload error:', error);
+          appendTextMessage('システム', '画像の送信に失敗しました。');
+        });
+      } else {
+        appendTextMessage('システム', '画像を選択してください。');
+      }
+    });
+    
+   function appendTextMessage(sender, message) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      if (sender === 'システム') {
+        messageDiv.classList.add('system-message');
+      } else {
+        messageDiv.classList.add('user-message');
+      }
+      messageDiv.innerHTML = `<span class="sender">${sender}:</span> ${message}`;
+      chatArea.appendChild(messageDiv);
+      chatArea.scrollTop = chatArea.scrollHeight; // 最新のメッセージが見えるようにスクロール
+    }
+
+    function appendImageMessage(sender, imageUrl) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      if (sender === 'あなた') {
+        messageDiv.classList.add('user-message');
+      } else {
+        // 必要に応じてサーバーからの画像メッセージのスタイルを設定
+      }
+      messageDiv.innerHTML = `<span class="sender">${sender}:</span><br><img src="${imageUrl}" alt="スタンプ" class="image-message">`;
+      chatArea.appendChild(messageDiv);
+      chatArea.scrollTop = chatArea.scrollHeight; // 最新のメッセージが見えるようにスクロール
+    }
+  
+  </script>
+  
+</body>
+</html>
