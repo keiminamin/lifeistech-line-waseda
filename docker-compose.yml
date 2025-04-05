@@ -1,0 +1,56 @@
+version: '3.8' # Use a recent version of Docker Compose syntax
+
+services:
+  # Service for the PostgreSQL Database
+  db:
+    image: postgres:13 # Use an official PostgreSQL image (version 13 is a common choice)
+    container_name: myapp_db # Optional: Give the container a specific name
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist database data using a named volume
+    environment:
+      POSTGRES_USER: postgres # Define the database user
+      POSTGRES_PASSWORD: password # Define the database password (CHANGE THIS in production!)
+      POSTGRES_DB: myapp_development # Define the database name to be created
+    ports:
+      # Optionally expose the port to your host machine for direct access (e.g., with a DB GUI)
+      # Format: "HOST_PORT:CONTAINER_PORT"
+      - "5433:5432" # Access from host via port 5433
+    networks:
+      - app_network
+
+  # Service for your Sinatra Web Application
+  web:
+    build: . # Build the image from the Dockerfile in the current directory
+    container_name: myapp_web # Optional: Give the container a specific name
+    command: bundle exec rackup config.ru -o 0.0.0.0 -p 4567 # Command to run the app
+    volumes:
+      - .:/usr/src/app # Mount your application code into the container for live changes (good for development)
+      - bundle_cache:/usr/local/bundle/ # Mount a volume for gems to persist them
+    ports:
+      - "4567:4567" # Map port 4567 on your host to port 4567 in the container
+    environment:
+      RACK_ENV: development # Set environment to development
+      # Use environment variables from .env file (see step 2)
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      # --- DATABASE URL ---
+      # Connects to the 'db' service using the credentials defined above
+      DATABASE_URL: "postgresql://postgres:password@db:5432/myapp_development"
+    depends_on:
+      - db # Wait for the db service to start before starting the web service
+    networks:
+      - app_network
+    # If you need stdin_open or tty for debugging (e.g., with pry)
+    # stdin_open: true
+    # tty: true
+
+# Define named volumes for data persistence
+volumes:
+  postgres_data:
+  bundle_cache:
+
+# Define a network for the services to communicate
+networks:
+  app_network:
+    driver: bridge
