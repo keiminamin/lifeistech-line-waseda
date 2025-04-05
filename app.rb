@@ -4,12 +4,14 @@ require 'sinatra/reloader' if development?
 require './models.rb'
 require 'cloudinary'
 require 'json'
+require 'dotenv/load'
 
 Cloudinary.config do |config|
-  config.cloud_name = 'dsnyf00wx'
-  config.api_key = '165498892554226'
-  config.api_secret = '-w_qlawYRxowWYYHpxN0LZptOEg'
+  config.cloud_name = ENV['CLOUDINARY_CLOUD_NAME']
+  config.api_key = ENV['CLOUDINARY_API_KEY']
+  config.api_secret = ENV['CLOUDINARY_API_SECRET']
 end
+
 
 get '/' do
   erb :index
